@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenDurian — TikTok Live Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #f5f4f1;
+  --card: #ffffff;
+  --border: #e6e4de;
+  --text: #2c2c2a;
+  --muted: #888780;
+  --light: #f9f8f6;
+  --campaign: #EF9F27;
+  --payday: #1D9E75;
+  --coupon: #378ADD;
+  --normal: #888780;
+  --rerun: #7F77DD;
+  --green: #3B6D11;
+  --red: #A32D2D;
+  --amber: #854F0B;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', 'Noto Sans Thai', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+/* Header */
+.hdr { background: #1e1e1c; color: #fff; padding: 1.75rem 2rem; }
+.hdr-inner { max-width: 1120px; margin: 0 auto; }
+.hdr-tag { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+.hdr h1 { font-size: 1.45rem; font-weight: 500; margin-bottom: 4px; }
+.hdr p { font-size: 12px; color: rgba(255,255,255,0.45); }
+
+/* Legend bar */
+.cond-legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 10px 2rem; background: #fff; border-bottom: 1px solid var(--border); max-width: 100%; }
+.cond-legend .wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 14px; }
+.cleg { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); }
+.ldot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* Container */
+.container { max-width: 1120px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+/* KPI cards */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.75rem; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.1rem; }
+.kpi.dark { background: #1e1e1c; border-color: #1e1e1c; }
+.kpi .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.kpi.dark .lbl { color: rgba(255,255,255,0.4); }
+.kpi .val { font-size: 1.7rem; font-weight: 600; color: var(--text); line-height: 1.1; }
+.kpi.dark .val { color: #fff; }
+.kpi .sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.kpi.dark .sub { color: rgba(255,255,255,0.35); }
+
+/* Section */
+.section { margin-bottom: 1.75rem; }
+.sec-hd { margin-bottom: 0.65rem; }
+.sec-hd h2 { font-size: 0.95rem; font-weight: 600; }
+.sec-hd p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; }
+.chart-wrap { position: relative; width: 100%; }
+
+/* Grid */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+/* Mini legend */
+.mini-leg { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.ml { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); }
+.ml-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* Sub title inside card */
+.card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.card-note  { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+
+/* Color refs */
+.c-g { color: var(--green); font-weight: 600; }
+.c-r { color: var(--red); font-weight: 600; }
+.c-m { color: var(--muted); }
+
+/* Table */
+.tbl-wrap { overflow-x: auto; }
+table.dt { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 820px; }
+table.dt th { text-align: left; padding: 7px 10px; background: var(--light); color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); white-space: nowrap; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+table.dt td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+table.dt tr:last-child td { border-bottom: none; }
+table.dt tr:hover td { background: var(--light); }
+
+/* Badges */
+.badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.b-camp { background: #FAEEDA; color: #854F0B; }
+.b-pay  { background: #EAF3DE; color: #3B6D11; }
+.b-coup { background: #E6F1FB; color: #185FA5; }
+.b-norm { background: #F1EFE8; color: #5F5E5A; }
+.b-rerun{ background: #EEEDFE; color: #3C3489; }
+
+/* Lessons */
+.lessons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.lbox { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem 1.2rem; }
+.ltitle { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.licon { width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.litem { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; line-height: 1.55; }
+.litem:last-child { border-bottom: none; padding-bottom: 0; }
+.litem b { display: block; font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.litem span { color: var(--muted); font-size: 12px; }
+
+.lbox.good .ltitle { color: #27500A; }
+.lbox.good .licon { background: #EAF3DE; }
+.lbox.bad  .ltitle { color: #791F1F; }
+.lbox.bad  .licon  { background: #FCEBEB; }
+.lbox.try  .ltitle { color: #0C447C; }
+.lbox.try  .licon  { background: #E6F1FB; }
+.lbox.cont .ltitle { color: #633806; }
+.lbox.cont .licon  { background: #FAEEDA; }
+
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; background: var(--light); border: 1px solid var(--border); color: var(--muted); }
+
+/* Annotation line */
+.roas-guide { position: absolute; left: 0; right: 0; border-top: 1.5px dashed rgba(139,93,11,0.4); pointer-events: none; }
+
+.footer { text-align: center; padding: 1.5rem; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); margin-top: 2rem; }
+.star-row { background: #fdf9f0 !important; }
+.star-row:hover td { background: #faf3e2 !important; }
+.star-cell { display: flex; align-items: center; gap: 6px; }
+.star-icon { color: #EF9F27; font-size: 14px; flex-shrink: 0; }
+.impact-best { color: #27500A; font-weight: 700; }
+.impact-hi { color: #3B6D11; font-weight: 600; }
+.impact-mid { color: #888780; }
+.impact-low { color: #A32D2D; }
+.star-note { display: flex; align-items: flex-start; gap: 8px; background: #fdf9f0; border: 1px solid #EF9F27; border-left: 3px solid #EF9F27; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #633806; margin-bottom: 10px; }
+.pp-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border: 1px solid var(--border); border-radius: 20px; background: var(--card); cursor: pointer; font-size: 12px; color: var(--text); font-family: inherit; transition: opacity 0.15s, background 0.15s; }
+.pp-btn:hover { background: var(--light); }
+.pp-btn.off { opacity: 0.3; }
+.pp-btn.off .ppd { opacity: 0.4; }
+.ppd { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+@media (max-width: 720px) {
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .g2, .g3, .lessons { grid-template-columns: 1fr; }
+  .hdr { padding: 1.25rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="hdr-tag">OpenDurian Publisher</div>
+    <h1>TikTok Live — Performance Dashboard</h1>
+    <p>ธันวาคม 2568 – พฤษภาคม 2569 &nbsp;·&nbsp; 11 sessions (9 Live + 2 Rerun) &nbsp;·&nbsp; อัปเดต 6 พ.ค. 2569</p>
+  </div>
+</div>
+
+<!-- Condition legend -->
+<div style="background:#fff;border-bottom:1px solid var(--border);padding:10px 2rem;">
+  <div style="max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;gap:14px;">
+    <div class="lleg"><b style="font-size:11px;color:#555;margin-right:6px;">Condition:</b></div>
+    <div class="lleg" style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#EF9F27"></div>Pre-Campaign / D-Day</div>
+    <div class="lleg" style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#1D9E75"></div>Payday (ปลายเดือน)</div>
+    <div class="lleg" style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#378ADD"></div>มีคูปองส่วนลด</div>
+    <div class="lleg" style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#888780"></div>ปกติ / ไม่มีแคมเปญ</div>
+    <div class="lleg" style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#7F77DD"></div>Rerun</div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- KPI Cards -->
+<div class="kpis" style="margin-top:1.5rem;">
+  <div class="kpi dark">
+    <div class="lbl">ยอดขายรวมขณะ Live</div>
+    <div class="val">฿820K</div>
+    <div class="sub">ตลอด 11 sessions รวมกัน</div>
+  </div>
+  <div class="kpi">
+    <div class="lbl">ยอดสูงสุดใน 1 session</div>
+    <div class="val" style="color:#EF9F27">฿211K</div>
+    <div class="sub">11 ธ.ค. 68 — Pre-12.12</div>
+  </div>
+  <div class="kpi">
+    <div class="lbl">ROAS เฉลี่ย</div>
+    <div class="val" style="color:#1D9E75">18.9x</div>
+    <div class="sub">ดีที่สุด: 27.2x (25 มี.ค.)</div>
+  </div>
+  <div class="kpi">
+    <div class="lbl">% ค่าโฆษณาเฉลี่ย</div>
+    <div class="val">5.8%</div>
+    <div class="sub">เป้าหมายควรต่ำกว่า 5%</div>
+  </div>
+</div>
+
+<!-- Chart 1: GMV per session -->
+<div class="section">
+  <div class="sec-hd">
+    <h2>ยอดขายขณะ Live — แต่ละครั้ง</h2>
+    <p>สีของแท่งบอกว่า Live ครั้งนั้นอยู่ในช่วงอะไร — ยิ่งแท่งสูงยิ่งขายได้มาก</p>
+  </div>
+  <div class="chart-card">
+    <div class="chart-wrap" style="height:250px;"><canvas id="cGMV"></canvas></div>
+  </div>
+</div>
+
+<!-- Charts 2 & 3 -->
+<div class="section">
+  <div class="sec-hd">
+    <h2>ยอดขายมาจากไหน?</h2>
+    <p>แบ่งได้ 2 มุม: ซื้อตอนดู Live โดยตรง vs ซื้อผ่าน Shop/Link &nbsp;·&nbsp; และ TikTok Shop vs Affiliate</p>
+  </div>
+  <div class="g2">
+    <div class="chart-card">
+      <div class="card-title">ซื้อตรงใน Live vs ผ่าน Shop/Link</div>
+      <div class="card-note">สีเข้ม = กดซื้อขณะดู Live · สีจาง = ซื้อผ่าน shop page หรือ affiliate link ช่วงเดียวกัน</div>
+      <div class="mini-leg">
+        <div class="ml"><div class="ml-dot" style="background:#7F77DD"></div>ซื้อขณะดู Live</div>
+        <div class="ml"><div class="ml-dot" style="background:#AFA9EC"></div>ซื้อผ่าน Shop/Link</div>
+      </div>
+      <div class="chart-wrap" style="height:310px;"><canvas id="cLiveGMV"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">TikTok Shop vs Affiliate</div>
+      <div class="card-note">Shop = ลูกค้าซื้อตรงผ่าน TikTok Shop · Affiliate = ซื้อผ่านลิงก์ของ Creator/Influencer</div>
+      <div class="mini-leg">
+        <div class="ml"><div class="ml-dot" style="background:#1D9E75"></div>TikTok Shop</div>
+        <div class="ml"><div class="ml-dot" style="background:#5DCAA5"></div>Affiliate</div>
+        <div class="ml"><div class="ml-dot" style="background:#D3D1C7"></div>รวม (ไม่มีข้อมูลแยก)</div>
+      </div>
+      <div class="chart-wrap" style="height:310px;"><canvas id="cShopAff"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts 4 & 5: ROAS & %Ads -->
+<div class="section">
+  <div class="sec-hd">
+    <h2>ประสิทธิภาพโฆษณา</h2>
+    <p>ROAS = ยอดขายที่ได้ต่อทุก 1 บาทที่จ่ายโฆษณา (ยิ่งสูงยิ่งดี) &nbsp;·&nbsp; %Ads = สัดส่วนค่าโฆษณา (ยิ่งต่ำยิ่งดี)</p>
+  </div>
+  <div class="g2">
+    <div class="chart-card">
+      <div class="card-title">ROAS แต่ละครั้ง</div>
+      <div class="card-note">สีเขียว ≥ 20x ดีมาก &nbsp;·&nbsp; สีส้ม 15–20x พอดี &nbsp;·&nbsp; สีแดง &lt;15x ต้องปรับ</div>
+      <div class="chart-wrap" style="height:220px;"><canvas id="cROAS"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">% ค่าโฆษณา (Ad Spend %)</div>
+      <div class="card-note">สีเขียว ≤5% ดีมาก &nbsp;·&nbsp; สีส้ม 5–8% รับได้ &nbsp;·&nbsp; สีแดง &gt;8% แพงเกินไป</div>
+      <div class="chart-wrap" style="height:220px;"><canvas id="cAds"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart 6: Pre/Post Live -->
+<div class="section">
+  <div class="sec-hd">
+    <h2>ยอดขาย 3 วัน ก่อน–ระหว่าง–หลัง Live</h2>
+    <p>กดปุ่มด้านล่างเพื่อเปิด/ปิดแต่ละส่วน — ดูว่า Shop หรือ Affiliate มีบทบาทมากกว่ากันในแต่ละช่วง</p>
+  </div>
+  <div class="chart-card">
+    <div id="ppToggles" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+      <span style="font-size:11px;color:var(--muted);align-self:center;margin-right:2px;">ก่อน Live:</span>
+      <button class="pp-btn" data-ds="0" onclick="ppToggle(0)"><span class="ppd" style="background:#85B7EB"></span>Shop</button>
+      <button class="pp-btn" data-ds="1" onclick="ppToggle(1)"><span class="ppd" style="background:#185FA5"></span>Affiliate</button>
+      <button class="pp-btn off" data-ds="5" onclick="ppToggle(5)"><span class="ppd" style="background:#B4B2A9"></span>รวม</button>
+      <span style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px;margin-right:2px;">ขณะ Live:</span>
+      <button class="pp-btn" data-ds="2" onclick="ppToggle(2)"><span class="ppd" style="background:#EF9F27"></span>รวม</button>
+      <span style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px;margin-right:2px;">หลัง Live:</span>
+      <button class="pp-btn" data-ds="3" onclick="ppToggle(3)"><span class="ppd" style="background:#5DCAA5"></span>Shop</button>
+      <button class="pp-btn" data-ds="4" onclick="ppToggle(4)"><span class="ppd" style="background:#0F6E56"></span>Affiliate</button>
+      <button class="pp-btn off" data-ds="6" onclick="ppToggle(6)"><span class="ppd" style="background:#1D9E75"></span>รวม</button>
+    </div>
+    <div class="chart-wrap" style="height:320px;"><canvas id="cPrePost"></canvas></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">* 4 พ.ค. 69 ยังไม่มีข้อมูล Post-Live (เพิ่ง Live ไป)</div>
+  </div>
+</div>
+
+<!-- CVR & Viewers -->
+<div class="section">
+  <div class="sec-hd">
+    <h2>ผู้ชม vs อัตราการซื้อ (CVR)</h2>
+    <p>CVR = % ของผู้ชมที่กดซื้อสินค้า — viewers เยอะไม่ได้แปลว่าจะขายได้มาก</p>
+  </div>
+  <div class="g2">
+    <div class="chart-card">
+      <div class="card-title">Max Viewers แต่ละ session</div>
+      <div class="card-note">จำนวนผู้ชมสูงสุดที่ดู Live พร้อมกัน</div>
+      <div class="chart-wrap" style="height:200px;"><canvas id="cViewer"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">CVR (อัตราการซื้อ)</div>
+      <div class="card-note">สีเขียว ≥5% ดีมาก &nbsp;·&nbsp; สีส้ม 3–5% พอใช้ &nbsp;·&nbsp; สีแดง &lt;3% ต่ำ</div>
+      <div class="chart-wrap" style="height:200px;"><canvas id="cCVR"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Table -->
+<div class="section">
+  <div class="sec-hd"><h2>ตารางสรุปทุก Session</h2></div>
+  <div class="star-note" style="margin-bottom:10px;">
+    <span style="font-size:15px;color:#EF9F27;flex-shrink:0;font-weight:700;">★</span>
+    <span><b>2 session ที่ดีที่สุด</b> — วัดจาก <b>Impact รวม 7 วัน</b> (ยอด 3 วันก่อน + ขณะ Live + 3 วันหลัง) เพื่อสะท้อนว่า Live ครั้งนั้นสร้างผลต่อยอดขายโดยรวมได้มากแค่ไหน ไม่ใช่แค่ยอดขณะ Live วันเดียว</span>
+  </div>
+  <div class="chart-card" style="padding:0;overflow:hidden;">
+    <div class="tbl-wrap">
+    <table class="dt">
+      <thead>
+        <tr>
+          <th>วันที่</th>
+          <th>ประเภท</th>
+          <th>Condition</th>
+          <th>ยอดขณะ Live</th>
+          <th>Shop</th>
+          <th>Affiliate</th>
+          <th>ROAS</th>
+          <th>%Ads</th>
+          <th>CVR</th>
+          <th>Viewers</th>
+          <th>หลัง 3D</th>
+          <th>★ Impact 7 วัน</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>11 ธ.ค. 68</b></td><td>LIVE</td>
+          <td><span class="badge b-camp">Pre-12.12</span></td>
+          <td class="c-g">฿211,448</td><td>฿123,089</td><td>฿88,359</td>
+          <td class="c-g">20.9x</td><td>4.78%</td><td class="c-g">7.93%</td>
+          <td>541</td><td>฿139,823</td>
+          <td class="impact-hi">฿453K</td>
+        </tr>
+        <tr>
+          <td><b>14 ม.ค. 69</b></td><td>LIVE</td>
+          <td><span class="badge b-norm">ปกติ</span></td>
+          <td>฿107,528</td><td>฿89,579</td><td>฿17,949</td>
+          <td class="c-g">23.1x</td><td class="c-g">4.32%</td><td class="c-r">1.84%</td>
+          <td>461</td><td>฿105,207</td>
+          <td class="impact-low">฿337K</td>
+        </tr>
+        <tr>
+          <td><b>28 ม.ค. 69</b></td><td>LIVE</td>
+          <td><span class="badge b-pay">Payday+คูปอง</span></td>
+          <td>฿84,600</td><td>฿60,320</td><td>฿24,280</td>
+          <td>18.1x</td><td>5.54%</td><td>4.16%</td>
+          <td>175</td><td class="c-g">฿350,048</td>
+          <td class="impact-hi">฿566K</td>
+        </tr>
+        <tr>
+          <td><b>9 ก.พ. 69</b></td><td>LIVE</td>
+          <td><span class="badge b-norm">ปกติ</span></td>
+          <td class="c-r">฿48,785</td><td>฿38,953</td><td>฿9,832</td>
+          <td class="c-g">21.2x</td><td class="c-g">4.73%</td><td class="c-r">2.20%</td>
+          <td>212</td><td>฿169,334</td>
+          <td class="impact-mid">฿398K</td>
+        </tr>
+        <tr class="star-row">
+          <td><div class="star-cell"><span class="star-icon">★</span><b>26 ก.พ. 69</b></div></td><td>LIVE</td>
+          <td><span class="badge b-camp">Pre-Campaign</span></td>
+          <td>฿54,915</td><td>฿37,543</td><td>฿17,372</td>
+          <td class="c-r">10.0x</td><td class="c-r">9.96%</td><td class="c-r">1.91%</td>
+          <td class="c-g">704</td><td class="c-g">฿440,278</td>
+          <td class="impact-best">฿707K #1</td>
+        </tr>
+        <tr>
+          <td><b>25 มี.ค. 69</b></td><td>LIVE</td>
+          <td><span class="badge b-coup">คูปอง</span></td>
+          <td>฿56,307</td><td>฿38,312</td><td>฿17,995</td>
+          <td class="c-g">27.2x</td><td class="c-g">3.68%</td><td class="c-g">5.36%</td>
+          <td>95</td><td>฿277,137</td>
+          <td class="impact-hi">฿506K</td>
+        </tr>
+        <tr>
+          <td><b>2 เม.ย. 69</b></td><td>LIVE</td>
+          <td><span class="badge b-coup">คูปอง</span></td>
+          <td>฿60,643</td><td>฿44,694</td><td>฿15,949</td>
+          <td>12.9x</td><td>7.76%</td><td>3.43%</td>
+          <td>135</td><td>฿236,083</td>
+          <td class="impact-hi">฿536K</td>
+        </tr>
+        <tr>
+          <td><b>9 เม.ย. 69</b></td><td>LIVE</td>
+          <td><span class="badge b-norm">New Cust.</span></td>
+          <td class="c-r">฿48,921</td><td>฿36,886</td><td>฿12,035</td>
+          <td>14.6x</td><td>6.86%</td><td>3.37%</td>
+          <td>115</td><td>฿109,150</td>
+          <td class="impact-low">฿305K</td>
+        </tr>
+        <tr class="star-row">
+          <td><div class="star-cell"><span class="star-icon">★</span><b>27 เม.ย. 69</b></div></td><td>LIVE</td>
+          <td><span class="badge b-pay">Payday+Pre5.5</span></td>
+          <td>฿59,710</td><td>฿36,183</td><td>฿23,524</td>
+          <td>13.9x</td><td>7.19%</td><td>4.68%</td>
+          <td>98</td><td>฿266,569</td>
+          <td class="impact-best">฿583K #2</td>
+        </tr>
+        <tr style="background:#f5f4f8;">
+          <td><div class="star-cell"><span style="font-size:11px;color:#7F77DD;border:1px solid #7F77DD;border-radius:3px;padding:1px 4px;font-weight:600;">RERUN</span><b>30 เม.ย. 69</b></div></td>
+          <td style="color:#7F77DD;">Rerun</td>
+          <td><span class="badge b-rerun">Rerun</span></td>
+          <td>฿25,431</td><td>฿13,330</td><td>฿12,101</td>
+          <td class="c-g">25.4x</td><td class="c-g">3.93%</td><td>4.63%</td>
+          <td>80</td><td class="c-g">฿315,055</td>
+          <td style="color:#7F77DD;font-size:11px;">฿675K (Rerun)</td>
+        </tr>
+        <tr>
+          <td><b>4 พ.ค. 69</b></td><td>LIVE</td>
+          <td><span class="badge b-camp">Pre-5.5</span></td>
+          <td>฿62,006</td>
+          <td>฿36,703</td><td>฿25,303</td>
+          <td>20.8x</td><td>4.81%</td><td class="c-g">5.32%</td>
+          <td>125</td><td style="color:var(--muted);font-size:11px;">รอข้อมูล</td>
+          <td style="color:var(--muted);font-size:11px;">฿378K+</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<!-- Impact 7-Day Ranking Chart -->
+<div class="section">
+  <div class="sec-hd">
+    <h2>★ Impact รวม 7 วัน — อันดับทุก Session</h2>
+    <p>รวมยอดขาย 3 วันก่อน + ขณะ Live + 3 วันหลัง — บอกว่า Live แต่ละครั้งกระตุ้นยอดขายได้มากแค่ไหนโดยรวม</p>
+  </div>
+  <div class="chart-card">
+    <div class="mini-leg">
+      <div class="ml"><div class="ml-dot" style="background:#EF9F27"></div>★ Top 2 Live (ดีที่สุด)</div>
+      <div class="ml"><div class="ml-dot" style="background:#1D9E75"></div>Live ทั่วไป</div>
+      <div class="ml"><div class="ml-dot" style="background:#7F77DD"></div>Rerun (ไม่นับในอันดับ)</div>
+      <div class="ml"><div class="ml-dot" style="background:#B4B2A9"></div>ข้อมูลยังไม่ครบ</div>
+    </div>
+    <div class="chart-wrap" style="height:300px;"><canvas id="cImpact"></canvas></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;">
+      * 30 เม.ย. (Rerun) = ฿675K แต่เป็น Rerun จึงไม่ได้รับ ★ · 4 พ.ค. ยังไม่มีข้อมูล Post-Live
+    </div>
+  </div>
+</div>
+
+<!-- ===== LESSONS ===== -->
+<div class="section">
+  <div class="sec-hd">
+    <h2>สรุปบทเรียน — ทำอะไรแล้วได้ผลยังไง?</h2>
+    <p>วิเคราะห์จากข้อมูลจริงทุก session เพื่อใช้วางแผน Live ครั้งต่อไป</p>
+  </div>
+  <div class="lessons">
+
+    <!-- GOOD -->
+    <div class="lbox good">
+      <div class="ltitle">
+        <div class="licon">✅</div>
+        ทำแล้วได้ผล — ทำต่อไปเลย!
+      </div>
+      <div class="litem">
+        <b>Live ก่อน D-Day 1 วัน (Pre-Campaign)</b>
+        11 ธ.ค. (Pre-12.12) ทำ ฿211K สูงที่สุดของทั้งปี · 4 พ.ค. (Pre-5.5) ทำ ฿62K ดีมาก
+        <span>→ คนพร้อมซื้อสูงมากก่อน D-Day ไม่ต้องรอวัน D-Day จริง</span>
+      </div>
+      <div class="litem">
+        <b>คูปองหลายระดับ (Multi-tier Discount)</b>
+        25 มี.ค. ใช้คูปอง 25%/20%/15% — ROAS สูงสุด 27.2x · %Ads ต่ำสุด 3.68%
+        <span>→ คูปองหลายขั้นบังคับให้ลูกค้าซื้อมากขึ้นต่อออเดอร์</span>
+      </div>
+      <div class="litem">
+        <b>Rerun ประหยัดงบ แต่ ROAS สูงมาก</b>
+        30 เม.ย. จ่ายโฆษณาแค่ ฿1,000 ได้ ROAS 25.4x — ต้นทุนต่ำมาก
+        <span>→ เหมาะสำหรับวัน Payday หรือช่วงหลัง Live จริง</span>
+      </div>
+      <div class="litem">
+        <b>Live ช่วง Payday (ปลายเดือน/ต้นเดือน)</b>
+        28 ม.ค. Post-Live 3 วันทำถึง ฿350K · 27 เม.ย. Post-Live ฿267K
+        <span>→ คนมีเงินพร้อมซื้อ — ยอดหลัง Live สูงมาก</span>
+      </div>
+    </div>
+
+    <!-- BAD -->
+    <div class="lbox bad">
+      <div class="ltitle">
+        <div class="licon">⚠️</div>
+        ระวัง — ต้องปรับ
+      </div>
+      <div class="litem">
+        <b>Live วันธรรมดา ไม่มีแคมเปญหรือคูปอง</b>
+        9 ก.พ. และ 9 เม.ย. ยอดต่ำสุด (~฿49K) · Affiliate น้อยมาก (เพียง 20%)
+        <span>→ ถ้าไม่มี hook อะไรเลย คนไม่มีแรงจูงใจมากพอ</span>
+      </div>
+      <div class="litem">
+        <b>★ 26 ก.พ. — Impact สูงสุด แต่ %Ads แพงเกินไป (9.96%)</b>
+        ROAS เหลือแค่ 10.0x ต่ำสุด ทั้งที่ Post-Live 3D ดีถึง ฿440K — แสดงว่า Impact มาจาก Campaign ไม่ใช่ Ad Budget
+        <span>→ ถ้า Cut %Ads ให้เหลือ 5% session นี้จะยิ่งดีกว่านี้มาก — Impact ดีอยู่แล้วโดยไม่ต้องใช้ Ad เยอะ</span>
+      </div>
+      <div class="litem">
+        <b>14 ม.ค. — CVR ต่ำมาก (1.84%) ทั้งที่ Viewer ดี</b>
+        มีคนดู 461 คน แต่ซื้อน้อย — อาจขาด incentive ใน Live
+        <span>→ ต้องเพิ่มส่วนลด/คูปอง exclusive เฉพาะ session นั้น</span>
+      </div>
+      <div class="litem">
+        <b>Affiliate ต่ำมากเมื่อไม่มีแคมเปญ</b>
+        9 ก.พ. Affiliate เพียง ฿9,832 (20%) — Affiliate ไม่ push ถ้าไม่มี incentive
+        <span>→ ต้องแจ้ง Affiliate ล่วงหน้าและให้คูปอง exclusive</span>
+      </div>
+    </div>
+
+    <!-- TRY -->
+    <div class="lbox try">
+      <div class="ltitle">
+        <div class="licon">💡</div>
+        น่าลอง — ยังไม่เคยทำ
+      </div>
+      <div class="litem">
+        <b>Live ตรง D-Day จริง (6.6 / 7.7 / 8.8...)</b>
+        ทุก session ยังเป็นแค่ Pre-Campaign — ยังไม่เคย Live ตรงวัน D-Day จริงสักครั้ง
+        <span>→ Pre-Campaign ดีมากแล้ว D-Day จริงที่คนพร้อมซื้อสูงสุดน่าจะดีกว่านี้</span>
+      </div>
+      <div class="litem">
+        <b>Activate Affiliate ล่วงหน้า 3–5 วัน (ไม่ใช่แค่วัน Live)</b>
+        26 ก.พ. Pre-Live Affiliate ฿157,568 สูงกว่า Affiliate ขณะ Live (฿17,372) ถึง 9 เท่า — Affiliate กำลัง build momentum ล่วงหน้าหลายวัน
+        <span>→ ถ้า activate เร็วกว่านี้และมีแผนวันต่อวัน Pre-Live traffic จะสูงขึ้นได้อีกมาก</span>
+      </div>
+      <div class="litem">
+        <b>Bundle สินค้าเฉพาะ Live เพื่อเพิ่ม Basket Size</b>
+        Avg Basket Size อยู่แค่ 184–255 บาทตลอด 6 เดือน — ไม่มี session ไหนที่ลอง bundle เลย
+        <span>→ ลอง "ซื้อ 2 เล่มราคาพิเศษ" หรือ set ที่จับคู่กัน ถ้า Basket ขึ้นไป 400 บาท GMV จะเพิ่มโดยไม่ต้องหาลูกค้าใหม่</span>
+      </div>
+      <div class="litem">
+        <b>Rerun ภายใน 24 ชั่วโมงหลัง Live ทันที</b>
+        30 เม.ย. (Rerun วันถัดจาก 27 เม.ย.) ได้ ROAS 25.4x ด้วยงบ ฿1,000 เพราะ momentum ยังร้อน
+        <span>→ ทำ Rerun ทุกครั้งภายใน 24 ชม. หลัง Live จริง เพื่อต่อยอด audience ที่เพิ่งสนใจ</span>
+      </div>
+      <div class="litem">
+        <b>ทดสอบเวลา Live นอกช่วง 16:00–21:00</b>
+        ทุก session อยู่ในช่วงเวลาเดียวกันทั้งหมด — ยังไม่รู้ว่า 20:00–23:00 หรือ 12:00–14:00 จะได้ผลต่างกันไหม
+        <span>→ ลอง 1 session ช่วงเวลาอื่น เปรียบเทียบ Viewer quality และ CVR</span>
+      </div>
+    </div>
+
+    <!-- CONTINUE -->
+    <div class="lbox cont">
+      <div class="ltitle">
+        <div class="licon">🔄</div>
+        ทำต่อ — ผลสม่ำเสมอ
+      </div>
+      <div class="litem">
+        <b>Live ต่อเนื่องทุกเดือน ไม่หยุด</b>
+        ข้อมูลสะสม 6 เดือน ทำให้เห็น pattern ชัดขึ้นเรื่อยๆ
+        <span>→ อย่าหยุด Live แม้บาง session ยอดจะไม่สูง</span>
+      </div>
+      <div class="litem">
+        <b>ตั้งเป้า %Ads ไม่เกิน 5%</b>
+        Session ที่ ROAS ดีสุดล้วนมี %Ads ต่ำกว่า 5% (มี.ค. 3.68% / ธ.ค. 4.78%)
+        <span>→ เพิ่ม organic + coupon แทนการเพิ่มงบโฆษณา</span>
+      </div>
+      <div class="litem">
+        <b>วัด Post-Live 3 วันทุกครั้ง</b>
+        หลาย session Post-Live ดีกว่า Live เอง (26 ก.พ. Post ฿440K vs Live ฿55K)
+        <span>→ Live สร้าง awareness ต่อเนื่อง ไม่ใช่แค่ยอดทันที</span>
+      </div>
+      <div class="litem">
+        <b>Rerun เป็น Low-cost Touchpoint ประจำ</b>
+        ต้นทุน ฿1,000 แต่ ROAS 25.4x — ดีกว่า Live จริงหลายครั้ง
+        <span>→ ทำ Rerun ทุกสัปดาห์หลัง Live จริงในช่วง peak</span>
+      </div>
+    </div>
+
+  </div>
+</div><!-- end lessons -->
+
+</div><!-- end container -->
+
+<div class="footer">
+  OpenDurian Publisher &nbsp;·&nbsp; TikTok Live Dashboard &nbsp;·&nbsp; Generated by Claude AI &nbsp;·&nbsp; อัปเดต 6 พ.ค. 2569
+</div>
+
+<!-- ===== CHARTS ===== -->
+<script>
+const labs = ['11ธ.ค.68','14ม.ค.69','28ม.ค.69','9ก.พ.69','★26ก.พ.69','25มี.ค.69','2เม.ย.69','9เม.ย.69','★27เม.ย.69','30เม.ย. Rerun','4พ.ค.69'];
+
+const totalGMV = [211448,107528,84600,48785,54915,56307,60643,48921,59710,25431,62006];
+const condColor = ['#EF9F27','#888780','#1D9E75','#888780','#EF9F27','#378ADD','#378ADD','#888780','#1D9E75','#7F77DD','#EF9F27'];
+
+const live = [96428,85419,53380,31166,31391,31857,38318,33891,30195,6921,22663];
+const gmv  = [115020,22109,31220,17619,23524,24450,22325,15030,29515,18510,39343];
+const shop = [123089,89579,60320,38953,37543,38312,44694,36886,36183,13330,36703];
+const aff  = [88359, 17949,24280,9832, 17372,17995,15949,12035,23524,12101,25303];
+const totalMay4 = [null,null,null,null,null,null,null,null,null,null,62006];
+
+const roas    = [20.94,23.12,18.06,21.15,10.04,27.17,12.89,14.58,13.91,25.43,20.81];
+const pctAds  = [4.78,4.32,5.54,4.73,9.96,3.68,7.76,6.86,7.19,3.93,4.81];
+const cvr     = [7.93,1.84,4.16,2.20,1.91,5.36,3.43,3.37,4.68,4.63,5.32];
+const viewers = [541,461,175,212,704,95,135,115,98,80,125];
+
+const preLive3D  = [101987,124528,131472,180033,211679,172684,239235,146734,257073,334507,315780];
+const postLive3D = [139823,105207,350048,169334,440278,277137,236083,109150,266569,315055,null];
+const preShop  = [31825, 39631, 48290, 76947, 54111, 39462, 59306, 39989, 75014, 95007, 77907];
+const preAff   = [70162, 84897, 83182,103086,157568,133222,179930,106745,182059,239500,237873];
+const postShop = [47580, 31289, 68525, 59277,151602, 75000, 65420, 34197, 84671, 78428, null];
+const postAff  = [92243, 73918,281523,110057,288676,202137,170663, 74953,181897,236627, null];
+
+function gc(arr, lo, loC, mid, midC, hiC, reverse) {
+  return arr.map(v => {
+    if (reverse) {
+      return v <= lo ? hiC : v <= mid ? midC : loC;
+    }
+    return v >= hi ? hiC : v >= lo ? midC : loC;
+  });
+}
+
+const roasColors = roas.map(v => v >= 20 ? '#1D9E75' : v >= 15 ? '#EF9F27' : '#E24B4A');
+const adsColors  = pctAds.map(v => v <= 5 ? '#1D9E75' : v <= 8 ? '#EF9F27' : '#E24B4A');
+const cvrColors  = cvr.map(v => v >= 5 ? '#1D9E75' : v >= 3 ? '#EF9F27' : '#E24B4A');
+
+const axisStyle = { color:'#888', font:{ size:11 } };
+const gridStyle = { color:'rgba(0,0,0,0.05)' };
+
+// Chart 1: Total GMV
+new Chart(document.getElementById('cGMV'), {
+  type:'bar',
+  data:{labels:labs,datasets:[{data:totalGMV,backgroundColor:condColor,borderRadius:5}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ฿'+c.raw.toLocaleString()}}},scales:{x:{grid:{display:false},ticks:axisStyle},y:{grid:gridStyle,ticks:{...axisStyle,callback:v=>'฿'+(v/1000).toFixed(0)+'K'}}}}
+});
+
+// Chart 2: Live vs GMV horizontal stacked
+new Chart(document.getElementById('cLiveGMV'),{type:'bar',data:{labels:labs,datasets:[{label:'Live',data:live,backgroundColor:'#7F77DD'},{label:'GMV',data:gmv,backgroundColor:'#AFA9EC'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const t=live[c.dataIndex]+gmv[c.dataIndex];return ' ฿'+c.raw.toLocaleString()+' ('+(c.raw/t*100).toFixed(0)+'%)';}}}},scales:{x:{stacked:true,grid:gridStyle,ticks:{...axisStyle,callback:v=>(v/1000).toFixed(0)+'K'}},y:{stacked:true,ticks:{...axisStyle,font:{size:10}}}}}});
+
+// Chart 3: Shop vs Affiliate
+const shopChart = shop.slice();
+const affChart  = aff.slice();
+const totalOnly = totalGMV.map((_,i)=>null);
+
+new Chart(document.getElementById('cShopAff'),{type:'bar',data:{labels:labs,datasets:[{label:'Shop',data:shopChart,backgroundColor:'#1D9E75'},{label:'Aff',data:affChart,backgroundColor:'#5DCAA5'},{label:'รวม',data:totalOnly,backgroundColor:'#D3D1C7'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{if(!c.raw)return '';const t=totalGMV[c.dataIndex];return ' ฿'+c.raw.toLocaleString()+' ('+(c.raw/t*100).toFixed(0)+'%)';}}}},scales:{x:{stacked:true,grid:gridStyle,ticks:{...axisStyle,callback:v=>(v/1000).toFixed(0)+'K'}},y:{stacked:true,ticks:{...axisStyle,font:{size:10}}}}}});
+
+// Chart 4: ROAS
+new Chart(document.getElementById('cROAS'),{type:'bar',data:{labels:labs,datasets:[{data:roas,backgroundColor:roasColors,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ROAS '+c.raw+'x'}}},scales:{x:{grid:{display:false},ticks:{...axisStyle,font:{size:10}}},y:{grid:gridStyle,ticks:{...axisStyle,font:{size:10},callback:v=>v+'x'},min:0}}}});
+
+// Chart 5: %Ads
+new Chart(document.getElementById('cAds'),{type:'bar',data:{labels:labs,datasets:[{data:pctAds,backgroundColor:adsColors,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' %Ads '+c.raw+'%'}}},scales:{x:{grid:{display:false},ticks:{...axisStyle,font:{size:10}}},y:{grid:gridStyle,ticks:{...axisStyle,font:{size:10},callback:v=>v+'%'},min:0,max:12}}}});
+
+// Chart 6: Pre/Post Live — 5 datasets with toggle
+const ppChart = new Chart(document.getElementById('cPrePost'), {
+  type: 'bar',
+  data: {
+    labels: labs,
+    datasets: [
+      { label:'ก่อน Live · Shop',      data:preShop,  backgroundColor:'#85B7EB', borderRadius:3 },
+      { label:'ก่อน Live · Affiliate', data:preAff,   backgroundColor:'#185FA5', borderRadius:3 },
+      { label:'ขณะ Live (รวม)',        data:totalGMV,   backgroundColor:'#EF9F27', borderRadius:3 },
+      { label:'หลัง Live · Shop',      data:postShop,   backgroundColor:'#5DCAA5', borderRadius:3 },
+      { label:'หลัง Live · Affiliate', data:postAff,    backgroundColor:'#0F6E56', borderRadius:3 },
+      { label:'ก่อน Live · รวม',       data:preLive3D,  backgroundColor:'#B4B2A9', borderRadius:3 },
+      { label:'หลัง Live · รวม',       data:postLive3D, backgroundColor:'#1D9E75', borderRadius:3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ฿' + (c.raw||0).toLocaleString() } }
+    },
+    scales: {
+      x: { grid:{display:false}, ticks:{...axisStyle,font:{size:10}} },
+      y: { grid:gridStyle, ticks:{...axisStyle, callback:v=>'฿'+(v/1000).toFixed(0)+'K'} }
+    }
+  }
+});
+// Hide "รวม" datasets by default (indices 5 & 6)
+ppChart.getDatasetMeta(5).hidden = true;
+ppChart.getDatasetMeta(6).hidden = true;
+ppChart.update();
+
+function ppToggle(idx) {
+  const meta = ppChart.getDatasetMeta(idx);
+  meta.hidden = !meta.hidden;
+  ppChart.update();
+  document.querySelector('.pp-btn[data-ds="'+idx+'"]').classList.toggle('off');
+}
+
+// Chart 7: Viewers
+new Chart(document.getElementById('cViewer'),{type:'bar',data:{labels:labs,datasets:[{data:viewers,backgroundColor:condColor,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw+' คน'}}},scales:{x:{grid:{display:false},ticks:{...axisStyle,font:{size:10}}},y:{grid:gridStyle,ticks:{...axisStyle,font:{size:10}}}}}});
+
+// Chart 8: CVR
+new Chart(document.getElementById('cCVR'),{type:'bar',data:{labels:labs,datasets:[{data:cvr,backgroundColor:cvrColors,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' CVR '+c.raw+'%'}}},scales:{x:{grid:{display:false},ticks:{...axisStyle,font:{size:10}}},y:{grid:gridStyle,ticks:{...axisStyle,font:{size:10},callback:v=>v+'%'},min:0}}}});
+
+// Chart 9: Impact 7-Day
+const impact7 = [453258, 337263, 566120, 398152, 706872, 506128, 535961, 304805, 583352, 674993, 377786];
+// 0=normal, 1=star, 2=rerun, 3=partial
+const impactType = [0,0,0,0,1,0,0,0,1,2,3];
+const impactColors = impactType.map(t => t===1?'#EF9F27' : t===2?'#7F77DD' : t===3?'#B4B2A9' : '#1D9E75');
+// Sort descending for display
+const impactData = labs.map((l,i) => ({label:l, val:impact7[i], color:impactColors[i], type:impactType[i]})).sort((a,b)=>b.val-a.val);
+new Chart(document.getElementById('cImpact'),{type:'bar',data:{labels:impactData.map(d=>d.label),datasets:[{data:impactData.map(d=>d.val),backgroundColor:impactData.map(d=>d.color),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const d=impactData[c.dataIndex];const tag=d.type===1?' ★ TOP':d.type===2?' (Rerun)':d.type===3?' (ไม่ครบ)':'';return ' ฿'+c.raw.toLocaleString()+tag;}}}},scales:{x:{grid:{display:false},ticks:{...axisStyle,font:{size:10}}},y:{grid:gridStyle,ticks:{...axisStyle,callback:v=>'฿'+(v/1000).toFixed(0)+'K'}}}}});
+</script>
+
+</body>
+</html>
