@@ -260,15 +260,15 @@ table.dt tr:hover td { background: var(--light); }
   <div class="chart-card">
     <div id="ppToggles" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;align-items:center;">
       <span style="font-size:11px;font-weight:500;color:var(--text);background:var(--light);border:1px solid var(--border);border-radius:4px;padding:3px 8px;flex-shrink:0;">ภาพรวม</span>
-      <button class="pp-btn" data-ds="5" onclick="ppToggle(5)"><span class="ppd" style="background:#5B9FD4"></span>ก่อน Live</button>
-      <button class="pp-btn" data-ds="2" onclick="ppToggle(2)"><span class="ppd" style="background:#EF9F27"></span>ขณะ Live</button>
-      <button class="pp-btn" data-ds="6" onclick="ppToggle(6)"><span class="ppd" style="background:#1D9E75"></span>หลัง Live</button>
+      <button class="pp-btn" data-ds="0" onclick="ppToggle(0)"><span class="ppd" style="background:#5B9FD4"></span>ก่อน Live</button>
+      <button class="pp-btn" data-ds="3" onclick="ppToggle(3)"><span class="ppd" style="background:#EF9F27"></span>ขณะ Live</button>
+      <button class="pp-btn" data-ds="4" onclick="ppToggle(4)"><span class="ppd" style="background:#1D9E75"></span>หลัง Live</button>
       <div style="width:1px;height:18px;background:var(--border);margin:0 2px;flex-shrink:0;"></div>
       <span style="font-size:11px;font-weight:500;color:var(--muted);background:var(--light);border:1px solid var(--border);border-radius:4px;padding:3px 8px;flex-shrink:0;">+ Breakdown</span>
-      <button class="pp-btn off" data-ds="0" onclick="ppToggle(0)"><span class="ppd" style="background:#85B7EB"></span>ก่อน · Shop</button>
-      <button class="pp-btn off" data-ds="1" onclick="ppToggle(1)"><span class="ppd" style="background:#185FA5"></span>ก่อน · Aff</button>
-      <button class="pp-btn off" data-ds="3" onclick="ppToggle(3)"><span class="ppd" style="background:#5DCAA5"></span>หลัง · Shop</button>
-      <button class="pp-btn off" data-ds="4" onclick="ppToggle(4)"><span class="ppd" style="background:#0F6E56"></span>หลัง · Aff</button>
+      <button class="pp-btn off" data-ds="1" onclick="ppToggle(1)"><span class="ppd" style="background:#85B7EB"></span>ก่อน · Shop</button>
+      <button class="pp-btn off" data-ds="2" onclick="ppToggle(2)"><span class="ppd" style="background:#185FA5"></span>ก่อน · Aff</button>
+      <button class="pp-btn off" data-ds="5" onclick="ppToggle(5)"><span class="ppd" style="background:#5DCAA5"></span>หลัง · Shop</button>
+      <button class="pp-btn off" data-ds="6" onclick="ppToggle(6)"><span class="ppd" style="background:#0F6E56"></span>หลัง · Aff</button>
     </div>
     <div class="chart-wrap" style="height:300px;"><canvas id="cPrePost"></canvas></div>
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
@@ -627,13 +627,13 @@ const ppChart = new Chart(document.getElementById('cPrePost'), {
   data: {
     labels: labs,
     datasets: [
-      { label:'ก่อน Live · Shop',      data:preShop,  backgroundColor:'#85B7EB', borderRadius:3 },
-      { label:'ก่อน Live · Affiliate', data:preAff,   backgroundColor:'#185FA5', borderRadius:3 },
-      { label:'ขณะ Live (รวม)',        data:totalGMV,   backgroundColor:'#EF9F27', borderRadius:3 },
-      { label:'หลัง Live · Shop',      data:postShop,   backgroundColor:'#5DCAA5', borderRadius:3 },
-      { label:'หลัง Live · Affiliate', data:postAff,    backgroundColor:'#0F6E56', borderRadius:3 },
-      { label:'ก่อน Live · รวม',       data:preLive3D,  backgroundColor:'#5B9FD4', borderRadius:3 },
-      { label:'หลัง Live · รวม',       data:postLive3D, backgroundColor:'#1D9E75', borderRadius:3 }
+      { label:'ก่อน Live · รวม',       data:preLive3D,  backgroundColor:'#5B9FD4', borderRadius:3 }, // 0 visible
+      { label:'ก่อน Live · Shop',      data:preShop,    backgroundColor:'#85B7EB', borderRadius:3 }, // 1 hidden
+      { label:'ก่อน Live · Affiliate', data:preAff,     backgroundColor:'#185FA5', borderRadius:3 }, // 2 hidden
+      { label:'ขณะ Live (รวม)',        data:totalGMV,   backgroundColor:'#EF9F27', borderRadius:3 }, // 3 visible
+      { label:'หลัง Live · รวม',       data:postLive3D, backgroundColor:'#1D9E75', borderRadius:3 }, // 4 visible
+      { label:'หลัง Live · Shop',      data:postShop,   backgroundColor:'#5DCAA5', borderRadius:3 }, // 5 hidden
+      { label:'หลัง Live · Affiliate', data:postAff,    backgroundColor:'#0F6E56', borderRadius:3 }  // 6 hidden
     ]
   },
   options: {
@@ -648,11 +648,11 @@ const ppChart = new Chart(document.getElementById('cPrePost'), {
     }
   }
 });
-// Default: show totals (5,6), hide breakdown (0,1,3,4)
-ppChart.getDatasetMeta(0).hidden = true;
+// Default: show 0,3,4 (รวม + Live) — hide breakdown 1,2,5,6
 ppChart.getDatasetMeta(1).hidden = true;
-ppChart.getDatasetMeta(3).hidden = true;
-ppChart.getDatasetMeta(4).hidden = true;
+ppChart.getDatasetMeta(2).hidden = true;
+ppChart.getDatasetMeta(5).hidden = true;
+ppChart.getDatasetMeta(6).hidden = true;
 ppChart.update();
 
 function ppToggle(idx) {
